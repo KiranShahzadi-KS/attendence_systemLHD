@@ -2,42 +2,57 @@ const mongoose = require("mongoose");
 
 const employeeSchema = new mongoose.Schema(
   {
-    employeeId: {
-      type: String,
+    salaryPerDay: {
+      type: Number,
       required: true,
-      unique: true,
-    }, // Assigned by the company
-
-    firstName: {
-      type: String,
-      required: true,
+      
     },
 
-    lastName: {
-      type: String,
+    totalWorkingDays: {
+      type: Number,
       required: true,
     },
 
-    email: {
-      type: String,
+    totalAbsentDays: {
+      type: Number,
+     
+    },
+
+    totalLeaveDays: {
+      type: Number,
+    },
+
+    totalLateDays: {
+      type: Number,
+    },
+
+    totalSalary: {
+      type: Number,
       required: true,
-      unique: true,
     },
 
-    address: {
-      type: String,
+    totalOffDays: {
+      type: Number,
     },
 
-    contactNo: {
-      type: String,
+    netSalary: {
+      type: Number,
     },
-
-    details: {
-      type: String,
+    deductedSalary: {
+      type: Number,
     },
-
-    designation: {
-      type: String,
+    month:{
+      type:String,
+      required:true
+    },
+    year:{
+      type:String,
+      required:true
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   { timestamps: true }

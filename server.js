@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 connectDB();
 
 // //Router Connection
-app.use("/api/v1", Router);
+app.use("/api", Router);
 
 //Server Start
 const PORT = process.env.PORT || 2000;

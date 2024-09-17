@@ -1,77 +1,129 @@
-const Employee = require("../models/employeeModel");
-const validateEmployeeSchema = require("../validations/employeeValidation");
+const Employee = require("../models/employeeModel"); // Assuming model is in models folder
+const User = require("../models/userModel"); // For referencing user
+const mongoose = require("mongoose");
 
-// Create a new employee
+// Calculate the net salary, deducted salary, and total off days
+const calculateSalaryDetails = (salaryPerDay, totalSalary, totalAbsentDays, totalLeaveDays) => {
+    const totalOffDays = totalAbsentDays + totalLeaveDays;
+    const deductedSalary = salaryPerDay * totalOffDays; // Salary deducted based on off days
+    const netSalary = totalSalary - deductedSalary; // Net salary after deductions
+
+    return {
+        totalOffDays,
+        deductedSalary,
+        netSalary
+    };
+};
+
+// Create a new employee record
 exports.createEmployee = async (req, res) => {
-  try {
-    const { error } = validateEmployeeSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+    try {
+        const { salaryPerDay, totalWorkingDays, totalAbsentDays, totalLeaveDays, totalSalary, month, year, userId } = req.body;
+
+        // Ensure that the userId exists
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Calculate salary details
+        const { totalOffDays, deductedSalary, netSalary } = calculateSalaryDetails(salaryPerDay, totalSalary, totalAbsentDays, totalLeaveDays);
+
+        // Create new employee
+        const employee = await Employee.create({
+            salaryPerDay,
+            totalWorkingDays,
+            totalAbsentDays,
+            totalLeaveDays,
+            totalLateDays: req.body.totalLateDays || 0,
+            totalSalary,
+            totalOffDays,
+            deductedSalary,
+            netSalary,
+            month,
+            year,
+            userId
+        });
+
+        res.status(201).json({ message: "Employee record created successfully", data: employee });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    console.log();
-
-    const employee = new Employee(req.body);
-    await employee.save();
-    console.log(employee);
-
-    res.status(201).json(employee);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
 };
 
-// Get all employees
-exports.getAllEmployees = async (req, res) => {
-  try {
-    const employees = await Employee.find();
-    res.status(200).json(employees);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+// Get all employees for a specific userId
+exports.getEmployeesByUserId = async (req, res) => {
+    try {
+        const userId = req.params.userId;
 
-// Get a single employee by ID
-exports.getEmployeeById = async (req, res) => {
-  try {
-    const employee = await Employee.findById(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(400).json({ message: "Invalid user ID" });
+        }
+
+        const employees = await Employee.find({ userId });
+        if (!employees.length) {
+            return res.status(404).json({ message: "No employee records found for this user" });
+        }
+
+        res.status(200).json({ data: employees });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.status(200).json(employee);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 };
 
-// Update an employee
+// Update employee record by ID
 exports.updateEmployee = async (req, res) => {
-  try {
-    const { error } = validateEmployeeSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    try {
+        const employeeId = req.params.id;
 
-    const employee = await Employee.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    });
-    if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+            return res.status(400).json({ message: "Invalid employee ID" });
+        }
+
+        const employee = await Employee.findById(employeeId);
+        if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+        // Update fields
+        const { salaryPerDay, totalWorkingDays, totalAbsentDays, totalLeaveDays, totalSalary, month, year } = req.body;
+
+        const updatedFields = {
+            salaryPerDay,
+            totalWorkingDays,
+            totalAbsentDays,
+            totalLeaveDays,
+            totalSalary,
+            month,
+            year
+        };
+
+        // Recalculate salary details if needed
+        const { totalOffDays, deductedSalary, netSalary } = calculateSalaryDetails(salaryPerDay, totalSalary, totalAbsentDays, totalLeaveDays);
+        updatedFields.totalOffDays = totalOffDays;
+        updatedFields.deductedSalary = deductedSalary;
+        updatedFields.netSalary = netSalary;
+
+        const updatedEmployee = await Employee.findByIdAndUpdate(employeeId, updatedFields, { new: true });
+        res.status(200).json({ message: "Employee record updated successfully", data: updatedEmployee });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.status(200).json(employee);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
 };
 
-// Delete an employee
+// Delete employee by ID
 exports.deleteEmployee = async (req, res) => {
-  try {
-    const employee = await Employee.findByIdAndDelete(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ error: "Employee not found" });
+    try {
+        const employeeId = req.params.id;
+
+        // Validate ObjectId
+        if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+            return res.status(400).json({ message: "Invalid employee ID" });
+        }
+
+        const employee = await Employee.findByIdAndDelete(employeeId);
+        if (!employee) return res.status(404).json({ message: "Employee not found" });
+
+        res.status(200).json({ message: "Employee record deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
-    res.status(200).json({ message: "Employee deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 };

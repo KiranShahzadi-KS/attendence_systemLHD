@@ -1,33 +1,38 @@
+const { string } = require("joi");
 const mongoose = require("mongoose");
 
-const attendenceSchema = new mongoose.Schema(
+const attendanceSchema = new mongoose.Schema(
   {
-    Date: {},
-    Intime: {},
-    Insource: {},
-    Outtime: {},
-    Outsource: {},
-    Officetime: {},
-    Late: {},
-    Extra: {},
-    Reason: {},
-    Deducted: {},
-
-    Attendeddays: {
-      type: Number,
-      default: 0,
+    employeeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Employee",
+      required: true,
     },
-    Workingdays: {},
-    Leavedays: {},
-    leaveDays: {},
-    Extraminutes: {},
-    LateAttendanceday: {},
+   
+    checkInTime: {
+      type: String,
+    },
+   
+    checkOutTime: {
+      type: String,
+    },
+   
+    lateReason: {
+      type: string,
+      default: false,
+    },
+    
+    status: {
+      type: String,
+      enum: ["accept", "reject"],
+    
+    },
+ 
 
-    Totalsalary: {},
-    empId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+    
+   
   },
-
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Attendence", attendenceSchema);
+module.exports = mongoose.model("Attendance", attendanceSchema);
